@@ -10,8 +10,11 @@ import android.os.Bundle
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+
+const val REQUEST_CODE = 100
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,9 +26,28 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
         findViewById<Button>(R.id.button).setOnClickListener {
-            registerPhoneListener()
-            call(this, "411")
+            if (ifPhonePermissionsGranted()) {
+                Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
+                Log.i(TAG, "Permission granted")
+                registerPhoneListener()
+                call(this, "411")
+            } else {
+                Toast.makeText(this, "Permission NOT granted", Toast.LENGTH_SHORT).show()
+                Log.i(TAG, "Permission NOT granted")
+                requestPhonePermission()
+            }
         }
+    }
+
+    private fun requestPhonePermission() {
+        requestPermissions(arrayOf(Manifest.permission.READ_PHONE_STATE), REQUEST_CODE)
+    }
+
+    private fun ifPhonePermissionsGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun registerPhoneListener() {
@@ -39,6 +61,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun unregisterPhoneListener() {
         telephonyManager?.unregisterTelephonyCallback(telephonyCallback)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        Log.i(TAG, "requestCode=$requestCode, grantResults=$grantResults")
     }
 
     override fun onDestroy() {
